@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prueba Firestore - Peluquería</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      background: #faf7f5;
+      color: #2b2320;
+    }
+    h1 { font-size: 1.3rem; margin-bottom: 4px; }
+    p.subtitle { color: #6b5d55; margin-top: 0; font-size: 0.9rem; }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+    label { display: block; font-size: 0.85rem; margin-bottom: 4px; font-weight: 600; }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d8cfc9;
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 12px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #b5651d;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.6; cursor: default; }
+    #estado { font-size: 0.85rem; margin-top: 8px; min-height: 1.2em; }
+    #estado.error { color: #b00020; }
+    #estado.ok { color: #1b7a3d; }
+    ul#lista { list-style: none; padding: 0; margin: 0; }
+    ul#lista li {
+      padding: 10px;
+      border-bottom: 1px solid #f0e9e4;
+      font-size: 0.95rem;
+    }
+    ul#lista li:last-child { border-bottom: none; }
+    ul#lista li .hora { color: #6b5d55; font-size: 0.8rem; display: block; }
+  </style>
+</head>
+<body>
+
+  <h1>Prueba de Firestore</h1>
+  <p class="subtitle">Solicitudes guardadas en la nube, visibles en tiempo real desde cualquier móvil.</p>
+
+  <div class="card">
+    <label for="nombre">Nombre</label>
+    <input type="text" id="nombre" placeholder="Ej: María" />
+
+    <label for="horaCita">Hora deseada</label>
+    <input type="time" id="horaCita" />
+
+    <button id="btnEnviar">Enviar solicitud de prueba</button>
+    <div id="estado"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:1rem; margin-top:0;">Solicitudes guardadas</h2>
+    <ul id="lista"></ul>
+  </div>
+
+  <!-- 1) SDK de Firebase cargado desde CDN, en modo "modular" (v10+) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      onSnapshot,
+      serverTimestamp,
+      query,
+      orderBy
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+    // 2) PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE
+    // La obtienes en la consola de Firebase, en "Configuración del proyecto" > "Tus apps" > "Config".
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_PROYECTO.firebaseapp.com",
+      projectId: "TU_PROYECTO",
+      storageBucket: "TU_PROYECTO.appspot.com",
+      messagingSenderId: "000000000000",
+      appId: "1:000000000000:web:xxxxxxxxxxxxxxxxxxxxxx"
+    };
+
+    // 3) Inicializar Firebase y Firestore
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Referencia a la colección "solicitudes_prueba"
+    const solicitudesRef = collection(db, "solicitudes_prueba");
+
+    const nombreInput = document.getElementById("nombre");
+    const horaInput = document.getElementById("horaCita");
+    const btnEnviar = document.getElementById("btnEnviar");
+    const estadoDiv = document.getElementById("estado");
+    const lista = document.getElementById("lista");
+
+    // 4) Enviar un nuevo documento a Firestore al pulsar el botón
+    btnEnviar.addEventListener("click", async () => {
+      const nombre = nombreInput.value.trim();
+      const hora = horaInput.value;
+
+      if (!nombre || !hora) {
+        estadoDiv.textContent = "Rellena el nombre y la hora antes de enviar.";
+        estadoDiv.className = "error";
+        return;
+      }
+
+      btnEnviar.disabled = true;
+      estadoDiv.textContent = "Enviando...";
+      estadoDiv.className = "";
+
+      try {
+        await addDoc(solicitudesRef, {
+          nombre,
+          hora,
+          creado: serverTimestamp()
+        });
+        estadoDiv.textContent = "¡Solicitud guardada correctamente!";
+        estadoDiv.className = "ok";
+        nombreInput.value = "";
+        horaInput.value = "";
+      } catch (error) {
+        console.error("Error al guardar en Firestore:", error);
+        estadoDiv.textContent = "Error al guardar: " + error.message;
+        estadoDiv.className = "error";
+      } finally {
+        btnEnviar.disabled = false;
+      }
+    });
+
+    // 5) Escuchar cambios en tiempo real y actualizar la lista automáticamente
+    const q = query(solicitudesRef, orderBy("creado", "desc"));
+    onSnapshot(q, (snapshot) => {
+      lista.innerHTML = "";
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const li = document.createElement("li");
+        li.innerHTML = `${data.nombre} — ${data.hora}<span class="hora">ID: ${doc.id}</span>`;
+        lista.appendChild(li);
+      });
+      if (snapshot.empty) {
+        lista.innerHTML = "<li>No hay solicitudes todavía.</li>";
+      }
+    }, (error) => {
+      console.error("Error al escuchar Firestore:", error);
+      estadoDiv.textContent = "Error al leer datos: " + error.message;
+      estadoDiv.className = "error";
+    });
+  </script>
+
+</body>
+</html>

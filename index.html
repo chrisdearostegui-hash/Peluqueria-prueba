@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Citas Peluquería</title>
+  <title>Agenda Peluquería</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -18,13 +18,13 @@
     h2 { font-size: 1.05rem; margin: 0 0 12px; }
     p.subtitle { color: #6b5d55; margin-top: 0; font-size: 0.9rem; }
 
-    nav.tabs, nav.subtabs {
+    nav.subtabs {
       display: flex;
       gap: 6px;
       margin-bottom: 16px;
       overflow-x: auto;
     }
-    nav.tabs button, nav.subtabs button {
+    nav.subtabs button {
       flex: 1;
       white-space: nowrap;
       padding: 10px 8px;
@@ -36,7 +36,7 @@
       font-weight: 600;
       cursor: pointer;
     }
-    nav.tabs button.active, nav.subtabs button.active {
+    nav.subtabs button.active {
       background: #b5651d;
       border-color: #b5651d;
       color: #fff;
@@ -59,7 +59,8 @@
       margin-bottom: 12px;
       background: #fff;
     }
-    button.primary, button.action {
+    button.primary {
+      width: 100%;
       padding: 12px;
       border: none;
       border-radius: 8px;
@@ -69,20 +70,7 @@
       font-weight: 600;
       cursor: pointer;
     }
-    button.primary { width: 100%; }
     button:disabled { opacity: 0.6; cursor: default; }
-    button.secondary {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #b5651d;
-      border-radius: 8px;
-      background: #fff;
-      color: #b5651d;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 8px;
-    }
     button.link {
       background: none; border: none; color: #b5651d; font-weight: 600;
       cursor: pointer; padding: 0; font-size: 0.85rem;
@@ -99,11 +87,6 @@
     }
     ul.lista li:last-child { border-bottom: none; }
     ul.lista li .detalle { color: #6b5d55; font-size: 0.8rem; display: block; margin-top: 2px; }
-    ul.lista li .acciones { margin-top: 8px; display: flex; gap: 8px; }
-    ul.lista li .acciones button { flex: 1; padding: 8px; font-size: 0.8rem; }
-    button.aprobar { background: #1b7a3d; color: #fff; border: none; border-radius: 6px; }
-    button.rechazar { background: #b00020; color: #fff; border: none; border-radius: 6px; }
-    button.borrar { background: #fff; color: #b00020; border: 1px solid #b00020; border-radius: 6px; padding: 6px 10px; font-size: 0.8rem; cursor: pointer; }
 
     .fila-horario {
       display: flex;
@@ -118,152 +101,106 @@
 
     .fila-servicio { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0e9e4; font-size: 0.9rem; }
     .fila-servicio:last-child { border-bottom: none; }
+    button.borrar { background: #fff; color: #b00020; border: 1px solid #b00020; border-radius: 6px; padding: 6px 10px; font-size: 0.8rem; cursor: pointer; }
 
     [hidden] { display: none !important; }
   </style>
 </head>
 <body>
 
-  <h1>💈 Citas Peluquería</h1>
-  <p class="subtitle">Pide cita o gestiona tu agenda, todo desde el móvil.</p>
+  <h1>💈 Agenda Peluquería</h1>
+  <p class="subtitle">Calendario de citas, siempre a mano, sin cuentas ni contraseñas.</p>
 
-  <nav class="tabs">
-    <button id="tabCliente" class="active">Reservar cita</button>
-    <button id="tabPeluquera">Área peluquera</button>
-  </nav>
+  <div class="card">
+    <label for="selectPeluquera">Peluquera / silla</label>
+    <select id="selectPeluquera">
+      <option value="">Selecciona...</option>
+    </select>
 
-  <!-- ===================== VISTA CLIENTE ===================== -->
-  <section id="vistaCliente">
-    <div class="card">
-      <h2>Pedir cita</h2>
-
-      <label for="selectPeluquera">Peluquera</label>
-      <select id="selectPeluquera">
-        <option value="">Selecciona...</option>
-      </select>
-
-      <label for="selectServicio">Servicio</label>
-      <select id="selectServicio" disabled>
-        <option value="">Elige primero una peluquera</option>
-      </select>
-
-      <label for="fechaCita">Fecha deseada</label>
-      <input type="date" id="fechaCita" />
-
-      <label for="horaCita">Hora deseada</label>
-      <input type="time" id="horaCita" />
-
-      <label for="clienteNombre">Tu nombre</label>
-      <input type="text" id="clienteNombre" placeholder="Ej: María" />
-
-      <label for="clienteTelefono">Tu teléfono</label>
-      <input type="tel" id="clienteTelefono" placeholder="Ej: 600 000 000" />
-
-      <button class="primary" id="btnSolicitar">Enviar solicitud de cita</button>
-      <div class="estado" id="estadoCliente"></div>
-    </div>
-  </section>
-
-  <!-- ===================== VISTA PELUQUERA ===================== -->
-  <section id="vistaPeluquera" hidden>
-
-    <!-- Login / registro -->
-    <div class="card" id="loginBox">
-      <h2>Acceso peluquera</h2>
-      <p class="subtitle">Entra con tu cuenta de Google, sin crear contraseñas nuevas.</p>
-      <button class="primary" id="btnGoogle">Entrar con Google</button>
-      <div class="estado" id="estadoLogin"></div>
-    </div>
-
-    <!-- Panel de gestión, visible tras iniciar sesión -->
-    <div id="panelBox" hidden>
-
-      <div class="card">
-        <label for="miNombre">Tu nombre (visible para los clientes)</label>
-        <input type="text" id="miNombre" placeholder="Ej: Ana - Peluquería Centro" />
-        <button class="secondary" id="btnGuardarNombre">Guardar nombre</button>
-        <button class="link" id="btnLogout" style="margin-top:12px;">Cerrar sesión</button>
+    <details style="margin-top:4px;">
+      <summary style="cursor:pointer; font-weight:600; font-size:0.9rem;">+ Añadir peluquera / silla</summary>
+      <div style="margin-top:10px;">
+        <label for="nuevaPeluqueraNombre">Nombre</label>
+        <input type="text" id="nuevaPeluqueraNombre" placeholder="Ej: Ana - Silla 1" />
+        <button class="primary" id="btnAnadirPeluquera">Añadir</button>
+        <div class="estado" id="estadoNuevaPeluquera"></div>
       </div>
+    </details>
+  </div>
 
-      <nav class="subtabs">
-        <button id="subtabCalendario" class="active">Calendario</button>
-        <button id="subtabSolicitudes">Solicitudes</button>
-        <button id="subtabServicios">Servicios</button>
-        <button id="subtabHorario">Horario</button>
-        <button id="subtabClientes">Clientes</button>
-      </nav>
+  <p class="subtitle" id="mensajeSinPeluquera">Añade una peluquera/silla arriba para empezar.</p>
 
-      <div class="card" id="panelCalendario">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-          <button class="link" id="btnSemanaAnterior">‹ Anterior</button>
-          <strong id="rangoSemana"></strong>
-          <button class="link" id="btnSemanaSiguiente">Siguiente ›</button>
+  <div id="panelBox" hidden>
+
+    <nav class="subtabs">
+      <button id="subtabCalendario" class="active">Calendario</button>
+      <button id="subtabServicios">Servicios</button>
+      <button id="subtabHorario">Horario</button>
+      <button id="subtabClientes">Clientes</button>
+    </nav>
+
+    <div class="card" id="panelCalendario">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+        <button class="link" id="btnSemanaAnterior">‹ Anterior</button>
+        <strong id="rangoSemana"></strong>
+        <button class="link" id="btnSemanaSiguiente">Siguiente ›</button>
+      </div>
+      <p class="subtitle" id="resumenSemana"></p>
+
+      <details style="margin-bottom:14px;">
+        <summary style="cursor:pointer; font-weight:600; font-size:0.9rem;">+ Añadir cita</summary>
+        <div style="margin-top:10px;">
+          <label for="citaNombre">Cliente</label>
+          <input type="text" id="citaNombre" placeholder="Nombre del cliente" />
+          <label for="citaTelefono">Teléfono</label>
+          <input type="tel" id="citaTelefono" placeholder="Teléfono" />
+          <label for="citaServicio">Servicio</label>
+          <select id="citaServicio"><option value="">Selecciona...</option></select>
+          <label for="citaFecha">Fecha</label>
+          <input type="date" id="citaFecha" />
+          <label for="citaHora">Hora</label>
+          <input type="time" id="citaHora" />
+          <button class="primary" id="btnAnadirCita">Añadir cita</button>
+          <div class="estado" id="estadoCita"></div>
         </div>
-        <p class="subtitle" id="resumenSemana"></p>
+      </details>
 
-        <details style="margin-bottom:14px;">
-          <summary style="cursor:pointer; font-weight:600; font-size:0.9rem;">+ Añadir cita manual</summary>
-          <div style="margin-top:10px;">
-            <label for="manualNombre">Cliente</label>
-            <input type="text" id="manualNombre" placeholder="Nombre del cliente" />
-            <label for="manualTelefono">Teléfono</label>
-            <input type="tel" id="manualTelefono" placeholder="Teléfono" />
-            <label for="manualServicio">Servicio</label>
-            <select id="manualServicio"><option value="">Selecciona...</option></select>
-            <label for="manualFecha">Fecha</label>
-            <input type="date" id="manualFecha" />
-            <label for="manualHora">Hora</label>
-            <input type="time" id="manualHora" />
-            <button class="primary" id="btnAnadirManual">Añadir cita</button>
-            <div class="estado" id="estadoManual"></div>
-          </div>
-        </details>
-
-        <div id="diasSemana"></div>
-      </div>
-
-      <div class="card" id="panelSolicitudes" hidden>
-        <h2>Solicitudes pendientes</h2>
-        <ul class="lista" id="listaSolicitudes"></ul>
-      </div>
-
-      <div class="card" id="panelServicios" hidden>
-        <h2>Tus servicios</h2>
-        <div id="listaServicios"></div>
-        <label for="servicioNombre" style="margin-top:12px;">Nombre del servicio</label>
-        <input type="text" id="servicioNombre" placeholder="Ej: Corte de pelo" />
-        <label for="servicioDuracion">Duración (minutos)</label>
-        <input type="number" id="servicioDuracion" placeholder="Ej: 30" min="5" step="5" />
-        <label for="servicioPrecio">Precio (€)</label>
-        <input type="number" id="servicioPrecio" placeholder="Ej: 15" min="0" step="0.5" />
-        <button class="primary" id="btnAnadirServicio">Añadir servicio</button>
-        <div class="estado" id="estadoServicios"></div>
-      </div>
-
-      <div class="card" id="panelHorario" hidden>
-        <h2>Horario semanal</h2>
-        <div id="horarioContainer"></div>
-        <button class="primary" id="btnGuardarHorario">Guardar horario</button>
-        <div class="estado" id="estadoHorario"></div>
-      </div>
-
-      <div class="card" id="panelClientes" hidden>
-        <h2>Clientes más frecuentes</h2>
-        <ul class="lista" id="listaClientes"></ul>
-      </div>
-
+      <div id="diasSemana"></div>
     </div>
-  </section>
+
+    <div class="card" id="panelServicios" hidden>
+      <h2>Servicios</h2>
+      <div id="listaServicios"></div>
+      <label for="servicioNombre" style="margin-top:12px;">Nombre del servicio</label>
+      <input type="text" id="servicioNombre" placeholder="Ej: Corte de pelo" />
+      <label for="servicioDuracion">Duración (minutos)</label>
+      <input type="number" id="servicioDuracion" placeholder="Ej: 30" min="5" step="5" />
+      <label for="servicioPrecio">Precio (€)</label>
+      <input type="number" id="servicioPrecio" placeholder="Ej: 15" min="0" step="0.5" />
+      <button class="primary" id="btnAnadirServicio">Añadir servicio</button>
+      <div class="estado" id="estadoServicios"></div>
+    </div>
+
+    <div class="card" id="panelHorario" hidden>
+      <h2>Horario semanal</h2>
+      <div id="horarioContainer"></div>
+      <button class="primary" id="btnGuardarHorario">Guardar horario</button>
+      <div class="estado" id="estadoHorario"></div>
+    </div>
+
+    <div class="card" id="panelClientes" hidden>
+      <h2>Clientes más frecuentes</h2>
+      <ul class="lista" id="listaClientes"></ul>
+    </div>
+
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
     import {
-      getFirestore, collection, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
+      getFirestore, collection, doc, addDoc, setDoc, deleteDoc,
       onSnapshot, query, where, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-    import {
-      getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut
-    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
     // PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE
     // (Consola de Firebase > Configuración del proyecto > Tus apps > Config)
@@ -278,7 +215,6 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const auth = getAuth(app);
 
     const DIAS = [
       { key: "lunes", label: "Lunes" },
@@ -290,34 +226,84 @@
       { key: "domingo", label: "Domingo" }
     ];
 
-    /* ---------- Navegación entre pestañas principales ---------- */
-    const tabCliente = document.getElementById("tabCliente");
-    const tabPeluquera = document.getElementById("tabPeluquera");
-    const vistaCliente = document.getElementById("vistaCliente");
-    const vistaPeluquera = document.getElementById("vistaPeluquera");
-
-    tabCliente.addEventListener("click", () => {
-      tabCliente.classList.add("active");
-      tabPeluquera.classList.remove("active");
-      vistaCliente.hidden = false;
-      vistaPeluquera.hidden = true;
-    });
-    tabPeluquera.addEventListener("click", () => {
-      tabPeluquera.classList.add("active");
-      tabCliente.classList.remove("active");
-      vistaPeluquera.hidden = false;
-      vistaCliente.hidden = true;
-    });
-
-    /* ================== VISTA CLIENTE ================== */
+    /* ---------- Elementos ---------- */
     const selectPeluquera = document.getElementById("selectPeluquera");
-    const selectServicio = document.getElementById("selectServicio");
-    const fechaCita = document.getElementById("fechaCita");
-    const horaCita = document.getElementById("horaCita");
-    const clienteNombre = document.getElementById("clienteNombre");
-    const clienteTelefono = document.getElementById("clienteTelefono");
-    const btnSolicitar = document.getElementById("btnSolicitar");
-    const estadoCliente = document.getElementById("estadoCliente");
+    const nuevaPeluqueraNombre = document.getElementById("nuevaPeluqueraNombre");
+    const btnAnadirPeluquera = document.getElementById("btnAnadirPeluquera");
+    const estadoNuevaPeluquera = document.getElementById("estadoNuevaPeluquera");
+    const mensajeSinPeluquera = document.getElementById("mensajeSinPeluquera");
+    const panelBox = document.getElementById("panelBox");
+
+    const rangoSemana = document.getElementById("rangoSemana");
+    const resumenSemana = document.getElementById("resumenSemana");
+    const diasSemana = document.getElementById("diasSemana");
+    const btnSemanaAnterior = document.getElementById("btnSemanaAnterior");
+    const btnSemanaSiguiente = document.getElementById("btnSemanaSiguiente");
+    const citaNombre = document.getElementById("citaNombre");
+    const citaTelefono = document.getElementById("citaTelefono");
+    const citaServicio = document.getElementById("citaServicio");
+    const citaFecha = document.getElementById("citaFecha");
+    const citaHora = document.getElementById("citaHora");
+    const btnAnadirCita = document.getElementById("btnAnadirCita");
+    const estadoCita = document.getElementById("estadoCita");
+
+    const listaServicios = document.getElementById("listaServicios");
+    const servicioNombre = document.getElementById("servicioNombre");
+    const servicioDuracion = document.getElementById("servicioDuracion");
+    const servicioPrecio = document.getElementById("servicioPrecio");
+    const btnAnadirServicio = document.getElementById("btnAnadirServicio");
+    const estadoServicios = document.getElementById("estadoServicios");
+
+    const horarioContainer = document.getElementById("horarioContainer");
+    const btnGuardarHorario = document.getElementById("btnGuardarHorario");
+    const estadoHorario = document.getElementById("estadoHorario");
+
+    const listaClientes = document.getElementById("listaClientes");
+
+    // Construir las filas del formulario de horario, una vez
+    DIAS.forEach(({ key, label }) => {
+      const fila = document.createElement("div");
+      fila.className = "fila-horario";
+      fila.innerHTML = `
+        <span class="dia-nombre">${label}</span>
+        <input type="checkbox" id="dia-${key}-activo" />
+        <input type="time" id="dia-${key}-inicio" />
+        <span>a</span>
+        <input type="time" id="dia-${key}-fin" />
+      `;
+      horarioContainer.appendChild(fila);
+    });
+
+    /* ---------- Navegación entre subpestañas ---------- */
+    const subtabs = {
+      calendario: document.getElementById("subtabCalendario"),
+      servicios: document.getElementById("subtabServicios"),
+      horario: document.getElementById("subtabHorario"),
+      clientes: document.getElementById("subtabClientes")
+    };
+    const paneles = {
+      calendario: document.getElementById("panelCalendario"),
+      servicios: document.getElementById("panelServicios"),
+      horario: document.getElementById("panelHorario"),
+      clientes: document.getElementById("panelClientes")
+    };
+    Object.keys(subtabs).forEach((key) => {
+      subtabs[key].addEventListener("click", () => {
+        Object.keys(subtabs).forEach((k) => {
+          subtabs[k].classList.toggle("active", k === key);
+          paneles[k].hidden = k !== key;
+        });
+      });
+    });
+
+    /* ---------- Selector de peluquera / silla ---------- */
+    let peluqueraActualId = "";
+    let peluqueraAPreseleccionar = null;
+    let unsubServicios = null;
+    let unsubCitas = null;
+    let unsubPerfil = null;
+    let confirmadasCache = [];
+    let weekOffset = 0;
 
     onSnapshot(collection(db, "peluqueras"), (snap) => {
       const actual = selectPeluquera.value;
@@ -325,145 +311,117 @@
       snap.forEach((d) => {
         const opt = document.createElement("option");
         opt.value = d.id;
-        opt.textContent = d.data().nombre || "Peluquera";
+        opt.textContent = d.data().nombre || "Sin nombre";
         selectPeluquera.appendChild(opt);
       });
-      selectPeluquera.value = actual;
-    });
 
-    let unsubServiciosCliente = null;
-    selectPeluquera.addEventListener("change", () => {
-      if (unsubServiciosCliente) unsubServiciosCliente();
-      const peluqueraId = selectPeluquera.value;
-      if (!peluqueraId) {
-        selectServicio.innerHTML = '<option value="">Elige primero una peluquera</option>';
-        selectServicio.disabled = true;
-        return;
-      }
-      selectServicio.disabled = false;
-      unsubServiciosCliente = onSnapshot(
-        collection(db, "peluqueras", peluqueraId, "servicios"),
-        (snap) => {
-          selectServicio.innerHTML = '<option value="">Selecciona...</option>';
-          snap.forEach((d) => {
-            const s = d.data();
-            const opt = document.createElement("option");
-            opt.value = d.id;
-            opt.dataset.nombre = s.nombre;
-            opt.dataset.duracion = s.duracionMin;
-            opt.textContent = `${s.nombre} (${s.duracionMin} min - ${s.precio}€)`;
-            selectServicio.appendChild(opt);
-          });
-        }
-      );
-    });
-
-    btnSolicitar.addEventListener("click", async () => {
-      const peluqueraId = selectPeluquera.value;
-      const peluqueraNombre = selectPeluquera.selectedOptions[0]?.textContent || "";
-      const servicioOpt = selectServicio.selectedOptions[0];
-      const fecha = fechaCita.value;
-      const hora = horaCita.value;
-      const nombre = clienteNombre.value.trim();
-      const telefono = clienteTelefono.value.trim();
-
-      if (!peluqueraId || !servicioOpt?.value || !fecha || !hora || !nombre || !telefono) {
-        estadoCliente.textContent = "Rellena todos los campos antes de enviar.";
-        estadoCliente.className = "estado error";
-        return;
+      if (peluqueraAPreseleccionar) {
+        selectPeluquera.value = peluqueraAPreseleccionar;
+        peluqueraAPreseleccionar = null;
+      } else if ([...selectPeluquera.options].some((o) => o.value === actual)) {
+        selectPeluquera.value = actual;
+      } else if (!snap.empty && !actual) {
+        selectPeluquera.value = snap.docs[0].id;
       }
 
-      btnSolicitar.disabled = true;
-      estadoCliente.textContent = "Enviando...";
-      estadoCliente.className = "estado";
+      cambiarPeluquera(selectPeluquera.value);
+    });
 
+    selectPeluquera.addEventListener("change", () => cambiarPeluquera(selectPeluquera.value));
+
+    btnAnadirPeluquera.addEventListener("click", async () => {
+      const nombre = nuevaPeluqueraNombre.value.trim();
+      if (!nombre) {
+        estadoNuevaPeluquera.textContent = "Escribe un nombre.";
+        estadoNuevaPeluquera.className = "estado error";
+        return;
+      }
       try {
-        await addDoc(collection(db, "citas"), {
-          peluqueraId,
-          peluqueraNombre,
-          servicioNombre: servicioOpt.dataset.nombre,
-          duracionMin: Number(servicioOpt.dataset.duracion),
-          fecha,
-          hora,
-          clienteNombre: nombre,
-          clienteTelefono: telefono,
-          estado: "pendiente",
+        const ref = await addDoc(collection(db, "peluqueras"), {
+          nombre,
+          horario: {},
           creado: serverTimestamp()
         });
-        estadoCliente.textContent = "¡Solicitud enviada! La peluquera la confirmará en breve.";
-        estadoCliente.className = "estado ok";
-        fechaCita.value = "";
-        horaCita.value = "";
-        clienteNombre.value = "";
-        clienteTelefono.value = "";
+        peluqueraAPreseleccionar = ref.id;
+        nuevaPeluqueraNombre.value = "";
+        estadoNuevaPeluquera.textContent = "Añadida.";
+        estadoNuevaPeluquera.className = "estado ok";
       } catch (error) {
-        console.error(error);
-        estadoCliente.textContent = "Error al enviar: " + error.message;
-        estadoCliente.className = "estado error";
-      } finally {
-        btnSolicitar.disabled = false;
+        estadoNuevaPeluquera.textContent = "Error: " + error.message;
+        estadoNuevaPeluquera.className = "estado error";
       }
     });
 
-    /* ================== LOGIN PELUQUERA (Google) ================== */
-    const btnGoogle = document.getElementById("btnGoogle");
-    const estadoLogin = document.getElementById("estadoLogin");
-    const loginBox = document.getElementById("loginBox");
-    const panelBox = document.getElementById("panelBox");
-    const btnLogout = document.getElementById("btnLogout");
+    function limpiarListenersPeluquera() {
+      [unsubPerfil, unsubServicios, unsubCitas].forEach((fn) => fn && fn());
+      unsubPerfil = unsubServicios = unsubCitas = null;
+    }
 
-    btnGoogle.addEventListener("click", async () => {
-      estadoLogin.textContent = "";
-      try {
-        const cred = await signInWithPopup(auth, new GoogleAuthProvider());
-        const ref = doc(db, "peluqueras", cred.user.uid);
-        const snap = await getDoc(ref);
-        if (!snap.exists()) {
-          await setDoc(ref, {
-            nombre: cred.user.displayName || cred.user.email || "Peluquera",
-            horario: {},
-            creado: serverTimestamp()
-          });
-        }
-      } catch (error) {
-        estadoLogin.textContent = "No se pudo entrar: " + error.message;
-        estadoLogin.className = "estado error";
+    function cambiarPeluquera(id) {
+      limpiarListenersPeluquera();
+      peluqueraActualId = id;
+      weekOffset = 0;
+      confirmadasCache = [];
+
+      if (!id) {
+        panelBox.hidden = true;
+        mensajeSinPeluquera.hidden = false;
+        return;
       }
-    });
+      panelBox.hidden = false;
+      mensajeSinPeluquera.hidden = true;
+      renderCalendario();
 
-    btnLogout.addEventListener("click", () => signOut(auth));
+      // Horario
+      unsubPerfil = onSnapshot(doc(db, "peluqueras", id), (snap) => {
+        const horario = (snap.data() || {}).horario || {};
+        DIAS.forEach(({ key }) => {
+          const d = horario[key] || {};
+          document.getElementById(`dia-${key}-activo`).checked = !!d.activo;
+          document.getElementById(`dia-${key}-inicio`).value = d.inicio || "";
+          document.getElementById(`dia-${key}-fin`).value = d.fin || "";
+        });
+      });
 
-    /* ================== PANEL DE GESTIÓN ================== */
-    const miNombre = document.getElementById("miNombre");
-    const btnGuardarNombre = document.getElementById("btnGuardarNombre");
-    const listaSolicitudes = document.getElementById("listaSolicitudes");
-    const listaClientes = document.getElementById("listaClientes");
-    const listaServicios = document.getElementById("listaServicios");
-    const servicioNombre = document.getElementById("servicioNombre");
-    const servicioDuracion = document.getElementById("servicioDuracion");
-    const servicioPrecio = document.getElementById("servicioPrecio");
-    const btnAnadirServicio = document.getElementById("btnAnadirServicio");
-    const estadoServicios = document.getElementById("estadoServicios");
-    const horarioContainer = document.getElementById("horarioContainer");
-    const btnGuardarHorario = document.getElementById("btnGuardarHorario");
-    const estadoHorario = document.getElementById("estadoHorario");
+      // Servicios
+      unsubServicios = onSnapshot(collection(db, "peluqueras", id, "servicios"), (snap) => {
+        listaServicios.innerHTML = "";
+        citaServicio.innerHTML = '<option value="">Selecciona...</option>';
+        snap.forEach((d) => {
+          const s = d.data();
+          const fila = document.createElement("div");
+          fila.className = "fila-servicio";
+          fila.innerHTML = `
+            <span>${s.nombre} — ${s.duracionMin} min — ${s.precio}€</span>
+            <button class="borrar" data-id="${d.id}">Borrar</button>
+          `;
+          fila.querySelector("button").addEventListener("click", () =>
+            deleteDoc(doc(db, "peluqueras", id, "servicios", d.id))
+          );
+          listaServicios.appendChild(fila);
 
-    const rangoSemana = document.getElementById("rangoSemana");
-    const resumenSemana = document.getElementById("resumenSemana");
-    const diasSemana = document.getElementById("diasSemana");
-    const btnSemanaAnterior = document.getElementById("btnSemanaAnterior");
-    const btnSemanaSiguiente = document.getElementById("btnSemanaSiguiente");
-    const manualNombre = document.getElementById("manualNombre");
-    const manualTelefono = document.getElementById("manualTelefono");
-    const manualServicio = document.getElementById("manualServicio");
-    const manualFecha = document.getElementById("manualFecha");
-    const manualHora = document.getElementById("manualHora");
-    const btnAnadirManual = document.getElementById("btnAnadirManual");
-    const estadoManual = document.getElementById("estadoManual");
+          const opt = document.createElement("option");
+          opt.value = d.id;
+          opt.dataset.nombre = s.nombre;
+          opt.dataset.duracion = s.duracionMin;
+          opt.textContent = `${s.nombre} (${s.duracionMin} min)`;
+          citaServicio.appendChild(opt);
+        });
+        if (snap.empty) listaServicios.innerHTML = "<p>Todavía no hay servicios.</p>";
+      });
 
-    let confirmadasCache = [];
-    let weekOffset = 0;
+      // Citas confirmadas (calendario + ranking de clientes)
+      const qCitas = query(collection(db, "citas"), where("peluqueraId", "==", id));
+      unsubCitas = onSnapshot(qCitas, (snap) => {
+        confirmadasCache = snap.docs
+          .map((d) => d.data())
+          .sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
+        renderCalendario();
+        renderClientes();
+      });
+    }
 
+    /* ---------- Calendario semanal ---------- */
     function fechaISO(d) {
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
@@ -490,7 +448,7 @@
       rangoSemana.textContent = `${formatoCorto(dias[0])} - ${formatoCorto(dias[6])}`;
 
       const citasSemana = confirmadasCache.filter((c) => c.fecha >= desde && c.fecha <= hasta);
-      resumenSemana.textContent = `${citasSemana.length} cita${citasSemana.length === 1 ? "" : "s"} confirmada${citasSemana.length === 1 ? "" : "s"} esta semana`;
+      resumenSemana.textContent = `${citasSemana.length} cita${citasSemana.length === 1 ? "" : "s"} esta semana`;
 
       diasSemana.innerHTML = "";
       dias.forEach((d, i) => {
@@ -512,7 +470,7 @@
         } else {
           citasDia.forEach((c) => {
             const li = document.createElement("li");
-            li.innerHTML = `${c.hora} — ${c.clienteNombre} <span class="detalle">${c.servicioNombre} (${c.duracionMin} min)</span>`;
+            li.innerHTML = `${c.hora} — ${c.clienteNombre} <span class="detalle">${c.servicioNombre} (${c.duracionMin} min) · Tel: ${c.clienteTelefono}</span>`;
             ul.appendChild(li);
           });
         }
@@ -524,230 +482,46 @@
     btnSemanaAnterior.addEventListener("click", () => { weekOffset--; renderCalendario(); });
     btnSemanaSiguiente.addEventListener("click", () => { weekOffset++; renderCalendario(); });
 
-    btnAnadirManual.addEventListener("click", async () => {
-      if (!auth.currentUser) return;
-      const nombre = manualNombre.value.trim();
-      const telefono = manualTelefono.value.trim();
-      const servicioOpt = manualServicio.selectedOptions[0];
-      const fecha = manualFecha.value;
-      const hora = manualHora.value;
+    btnAnadirCita.addEventListener("click", async () => {
+      if (!peluqueraActualId) return;
+      const nombre = citaNombre.value.trim();
+      const telefono = citaTelefono.value.trim();
+      const servicioOpt = citaServicio.selectedOptions[0];
+      const fecha = citaFecha.value;
+      const hora = citaHora.value;
 
       if (!nombre || !telefono || !servicioOpt?.value || !fecha || !hora) {
-        estadoManual.textContent = "Rellena todos los campos.";
-        estadoManual.className = "estado error";
+        estadoCita.textContent = "Rellena todos los campos.";
+        estadoCita.className = "estado error";
         return;
       }
 
       try {
         await addDoc(collection(db, "citas"), {
-          peluqueraId: auth.currentUser.uid,
-          peluqueraNombre: miNombre.value || "",
+          peluqueraId: peluqueraActualId,
           servicioNombre: servicioOpt.dataset.nombre,
           duracionMin: Number(servicioOpt.dataset.duracion),
           fecha,
           hora,
           clienteNombre: nombre,
           clienteTelefono: telefono,
-          estado: "confirmada",
           creado: serverTimestamp()
         });
-        manualNombre.value = "";
-        manualTelefono.value = "";
-        manualFecha.value = "";
-        manualHora.value = "";
-        estadoManual.textContent = "Cita añadida al calendario.";
-        estadoManual.className = "estado ok";
+        citaNombre.value = "";
+        citaTelefono.value = "";
+        citaFecha.value = "";
+        citaHora.value = "";
+        estadoCita.textContent = "Cita añadida.";
+        estadoCita.className = "estado ok";
       } catch (error) {
-        estadoManual.textContent = "Error: " + error.message;
-        estadoManual.className = "estado error";
+        estadoCita.textContent = "Error: " + error.message;
+        estadoCita.className = "estado error";
       }
     });
 
-    // Construir las filas del formulario de horario, una vez
-    DIAS.forEach(({ key, label }) => {
-      const fila = document.createElement("div");
-      fila.className = "fila-horario";
-      fila.innerHTML = `
-        <span class="dia-nombre">${label}</span>
-        <input type="checkbox" id="dia-${key}-activo" />
-        <input type="time" id="dia-${key}-inicio" />
-        <span>a</span>
-        <input type="time" id="dia-${key}-fin" />
-      `;
-      horarioContainer.appendChild(fila);
-    });
-
-    const subtabs = {
-      calendario: document.getElementById("subtabCalendario"),
-      solicitudes: document.getElementById("subtabSolicitudes"),
-      servicios: document.getElementById("subtabServicios"),
-      horario: document.getElementById("subtabHorario"),
-      clientes: document.getElementById("subtabClientes")
-    };
-    const paneles = {
-      calendario: document.getElementById("panelCalendario"),
-      solicitudes: document.getElementById("panelSolicitudes"),
-      servicios: document.getElementById("panelServicios"),
-      horario: document.getElementById("panelHorario"),
-      clientes: document.getElementById("panelClientes")
-    };
-    Object.keys(subtabs).forEach((key) => {
-      subtabs[key].addEventListener("click", () => {
-        Object.keys(subtabs).forEach((k) => {
-          subtabs[k].classList.toggle("active", k === key);
-          paneles[k].hidden = k !== key;
-        });
-      });
-    });
-
-    let unsubPerfil = null;
-    let unsubServiciosPanel = null;
-    let unsubPendientes = null;
-    let unsubConfirmadas = null;
-
-    function limpiarListeners() {
-      [unsubPerfil, unsubServiciosPanel, unsubPendientes, unsubConfirmadas].forEach((fn) => fn && fn());
-      unsubPerfil = unsubServiciosPanel = unsubPendientes = unsubConfirmadas = null;
-    }
-
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        loginBox.hidden = true;
-        panelBox.hidden = false;
-        iniciarPanel(user.uid);
-      } else {
-        loginBox.hidden = false;
-        panelBox.hidden = true;
-        limpiarListeners();
-      }
-    });
-
-    function iniciarPanel(uid) {
-      weekOffset = 0;
-      confirmadasCache = [];
-      renderCalendario();
-
-      // Perfil (nombre + horario)
-      unsubPerfil = onSnapshot(doc(db, "peluqueras", uid), (snap) => {
-        const data = snap.data() || {};
-        miNombre.value = data.nombre || "";
-        const horario = data.horario || {};
-        DIAS.forEach(({ key }) => {
-          const d = horario[key] || {};
-          document.getElementById(`dia-${key}-activo`).checked = !!d.activo;
-          document.getElementById(`dia-${key}-inicio`).value = d.inicio || "";
-          document.getElementById(`dia-${key}-fin`).value = d.fin || "";
-        });
-      });
-
-      // Servicios propios
-      unsubServiciosPanel = onSnapshot(
-        collection(db, "peluqueras", uid, "servicios"),
-        (snap) => {
-          listaServicios.innerHTML = "";
-          manualServicio.innerHTML = '<option value="">Selecciona...</option>';
-          snap.forEach((d) => {
-            const s = d.data();
-            const fila = document.createElement("div");
-            fila.className = "fila-servicio";
-            fila.innerHTML = `
-              <span>${s.nombre} — ${s.duracionMin} min — ${s.precio}€</span>
-              <button class="borrar" data-id="${d.id}">Borrar</button>
-            `;
-            fila.querySelector("button").addEventListener("click", () =>
-              deleteDoc(doc(db, "peluqueras", uid, "servicios", d.id))
-            );
-            listaServicios.appendChild(fila);
-
-            const opt = document.createElement("option");
-            opt.value = d.id;
-            opt.dataset.nombre = s.nombre;
-            opt.dataset.duracion = s.duracionMin;
-            opt.textContent = `${s.nombre} (${s.duracionMin} min)`;
-            manualServicio.appendChild(opt);
-          });
-          if (snap.empty) listaServicios.innerHTML = "<p>Todavía no has añadido ningún servicio.</p>";
-        }
-      );
-
-      // Solicitudes pendientes
-      const qPendientes = query(
-        collection(db, "citas"),
-        where("peluqueraId", "==", uid),
-        where("estado", "==", "pendiente")
-      );
-      unsubPendientes = onSnapshot(qPendientes, (snap) => {
-        listaSolicitudes.innerHTML = "";
-        const docs = snap.docs.sort((a, b) => (a.data().fecha + a.data().hora).localeCompare(b.data().fecha + b.data().hora));
-        docs.forEach((d) => {
-          const c = d.data();
-          const li = document.createElement("li");
-          li.innerHTML = `
-            ${c.clienteNombre} — ${c.servicioNombre}
-            <span class="detalle">${c.fecha} a las ${c.hora} · Tel: ${c.clienteTelefono}</span>
-            <div class="acciones">
-              <button class="aprobar">Confirmar</button>
-              <button class="rechazar">Rechazar</button>
-            </div>
-          `;
-          li.querySelector(".aprobar").addEventListener("click", () =>
-            updateDoc(doc(db, "citas", d.id), { estado: "confirmada" })
-          );
-          li.querySelector(".rechazar").addEventListener("click", () =>
-            updateDoc(doc(db, "citas", d.id), { estado: "rechazada" })
-          );
-          listaSolicitudes.appendChild(li);
-        });
-        if (snap.empty) listaSolicitudes.innerHTML = "<li>No hay solicitudes pendientes.</li>";
-      });
-
-      // Citas confirmadas (también sirve para calcular el ranking de clientes)
-      const qConfirmadas = query(
-        collection(db, "citas"),
-        where("peluqueraId", "==", uid),
-        where("estado", "==", "confirmada")
-      );
-      unsubConfirmadas = onSnapshot(qConfirmadas, (snap) => {
-        const docs = snap.docs
-          .map((d) => d.data())
-          .sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
-
-        confirmadasCache = docs;
-        renderCalendario();
-
-        // Ranking de clientes frecuentes + su historial de servicios
-        const porTelefono = new Map();
-        docs.forEach((c) => {
-          const key = c.clienteTelefono || c.clienteNombre;
-          if (!porTelefono.has(key)) {
-            porTelefono.set(key, { nombre: c.clienteNombre, telefono: c.clienteTelefono, visitas: 0, servicios: [] });
-          }
-          const entrada = porTelefono.get(key);
-          entrada.visitas += 1;
-          entrada.servicios.push(c.servicioNombre);
-        });
-        const ranking = [...porTelefono.values()].sort((a, b) => b.visitas - a.visitas);
-
-        listaClientes.innerHTML = "";
-        ranking.forEach((cl) => {
-          const li = document.createElement("li");
-          li.innerHTML = `
-            ${cl.nombre} — ${cl.visitas} visita${cl.visitas === 1 ? "" : "s"}
-            <span class="detalle">Tel: ${cl.telefono} · Servicios pedidos: ${cl.servicios.join(", ")}</span>
-          `;
-          listaClientes.appendChild(li);
-        });
-        if (ranking.length === 0) listaClientes.innerHTML = "<li>Todavía no hay historial de clientes.</li>";
-      });
-    }
-
-    btnGuardarNombre.addEventListener("click", async () => {
-      if (!auth.currentUser) return;
-      await setDoc(doc(db, "peluqueras", auth.currentUser.uid), { nombre: miNombre.value.trim() }, { merge: true });
-    });
-
+    /* ---------- Servicios ---------- */
     btnAnadirServicio.addEventListener("click", async () => {
-      if (!auth.currentUser) return;
+      if (!peluqueraActualId) return;
       const nombre = servicioNombre.value.trim();
       const duracionMin = Number(servicioDuracion.value);
       const precio = Number(servicioPrecio.value);
@@ -757,7 +531,7 @@
         return;
       }
       try {
-        await addDoc(collection(db, "peluqueras", auth.currentUser.uid, "servicios"), {
+        await addDoc(collection(db, "peluqueras", peluqueraActualId, "servicios"), {
           nombre, duracionMin, precio
         });
         servicioNombre.value = "";
@@ -771,8 +545,9 @@
       }
     });
 
+    /* ---------- Horario ---------- */
     btnGuardarHorario.addEventListener("click", async () => {
-      if (!auth.currentUser) return;
+      if (!peluqueraActualId) return;
       const horario = {};
       DIAS.forEach(({ key }) => {
         horario[key] = {
@@ -782,7 +557,7 @@
         };
       });
       try {
-        await setDoc(doc(db, "peluqueras", auth.currentUser.uid), { horario }, { merge: true });
+        await setDoc(doc(db, "peluqueras", peluqueraActualId), { horario }, { merge: true });
         estadoHorario.textContent = "Horario guardado.";
         estadoHorario.className = "estado ok";
       } catch (error) {
@@ -790,6 +565,32 @@
         estadoHorario.className = "estado error";
       }
     });
+
+    /* ---------- Clientes frecuentes ---------- */
+    function renderClientes() {
+      const porTelefono = new Map();
+      confirmadasCache.forEach((c) => {
+        const key = c.clienteTelefono || c.clienteNombre;
+        if (!porTelefono.has(key)) {
+          porTelefono.set(key, { nombre: c.clienteNombre, telefono: c.clienteTelefono, visitas: 0, servicios: [] });
+        }
+        const entrada = porTelefono.get(key);
+        entrada.visitas += 1;
+        entrada.servicios.push(c.servicioNombre);
+      });
+      const ranking = [...porTelefono.values()].sort((a, b) => b.visitas - a.visitas);
+
+      listaClientes.innerHTML = "";
+      ranking.forEach((cl) => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          ${cl.nombre} — ${cl.visitas} visita${cl.visitas === 1 ? "" : "s"}
+          <span class="detalle">Tel: ${cl.telefono} · Servicios pedidos: ${cl.servicios.join(", ")}</span>
+        `;
+        listaClientes.appendChild(li);
+      });
+      if (ranking.length === 0) listaClientes.innerHTML = "<li>Todavía no hay historial de clientes.</li>";
+    }
   </script>
 
 </body>

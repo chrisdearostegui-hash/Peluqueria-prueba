@@ -170,12 +170,8 @@
     <!-- Login / registro -->
     <div class="card" id="loginBox">
       <h2>Acceso peluquera</h2>
-      <label for="loginEmail">Email</label>
-      <input type="email" id="loginEmail" placeholder="tucorreo@ejemplo.com" />
-      <label for="loginPass">Contraseña</label>
-      <input type="password" id="loginPass" placeholder="Mínimo 6 caracteres" />
-      <button class="primary" id="btnEntrar">Entrar</button>
-      <button class="secondary" id="btnRegistrar">Crear cuenta nueva</button>
+      <p class="subtitle">Entra con tu cuenta de Google, sin crear contraseñas nuevas.</p>
+      <button class="primary" id="btnGoogle">Entrar con Google</button>
       <div class="estado" id="estadoLogin"></div>
     </div>
 
@@ -190,21 +186,45 @@
       </div>
 
       <nav class="subtabs">
-        <button id="subtabSolicitudes" class="active">Solicitudes</button>
-        <button id="subtabConfirmadas">Calendario</button>
+        <button id="subtabCalendario" class="active">Calendario</button>
+        <button id="subtabSolicitudes">Solicitudes</button>
         <button id="subtabServicios">Servicios</button>
         <button id="subtabHorario">Horario</button>
         <button id="subtabClientes">Clientes</button>
       </nav>
 
-      <div class="card" id="panelSolicitudes">
-        <h2>Solicitudes pendientes</h2>
-        <ul class="lista" id="listaSolicitudes"></ul>
+      <div class="card" id="panelCalendario">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+          <button class="link" id="btnSemanaAnterior">‹ Anterior</button>
+          <strong id="rangoSemana"></strong>
+          <button class="link" id="btnSemanaSiguiente">Siguiente ›</button>
+        </div>
+        <p class="subtitle" id="resumenSemana"></p>
+
+        <details style="margin-bottom:14px;">
+          <summary style="cursor:pointer; font-weight:600; font-size:0.9rem;">+ Añadir cita manual</summary>
+          <div style="margin-top:10px;">
+            <label for="manualNombre">Cliente</label>
+            <input type="text" id="manualNombre" placeholder="Nombre del cliente" />
+            <label for="manualTelefono">Teléfono</label>
+            <input type="tel" id="manualTelefono" placeholder="Teléfono" />
+            <label for="manualServicio">Servicio</label>
+            <select id="manualServicio"><option value="">Selecciona...</option></select>
+            <label for="manualFecha">Fecha</label>
+            <input type="date" id="manualFecha" />
+            <label for="manualHora">Hora</label>
+            <input type="time" id="manualHora" />
+            <button class="primary" id="btnAnadirManual">Añadir cita</button>
+            <div class="estado" id="estadoManual"></div>
+          </div>
+        </details>
+
+        <div id="diasSemana"></div>
       </div>
 
-      <div class="card" id="panelConfirmadas" hidden>
-        <h2>Citas confirmadas</h2>
-        <ul class="lista" id="listaConfirmadas"></ul>
+      <div class="card" id="panelSolicitudes" hidden>
+        <h2>Solicitudes pendientes</h2>
+        <ul class="lista" id="listaSolicitudes"></ul>
       </div>
 
       <div class="card" id="panelServicios" hidden>
@@ -238,12 +258,11 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
     import {
-      getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
-      onSnapshot, query, where, orderBy, serverTimestamp
+      getFirestore, collection, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
+      onSnapshot, query, where, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
     import {
-      getAuth, onAuthStateChanged, signInWithEmailAndPassword,
-      createUserWithEmailAndPassword, signOut
+      getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
     // PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE
@@ -386,37 +405,28 @@
       }
     });
 
-    /* ================== LOGIN / REGISTRO PELUQUERA ================== */
-    const loginEmail = document.getElementById("loginEmail");
-    const loginPass = document.getElementById("loginPass");
-    const btnEntrar = document.getElementById("btnEntrar");
-    const btnRegistrar = document.getElementById("btnRegistrar");
+    /* ================== LOGIN PELUQUERA (Google) ================== */
+    const btnGoogle = document.getElementById("btnGoogle");
     const estadoLogin = document.getElementById("estadoLogin");
     const loginBox = document.getElementById("loginBox");
     const panelBox = document.getElementById("panelBox");
     const btnLogout = document.getElementById("btnLogout");
 
-    btnEntrar.addEventListener("click", async () => {
+    btnGoogle.addEventListener("click", async () => {
       estadoLogin.textContent = "";
       try {
-        await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPass.value);
+        const cred = await signInWithPopup(auth, new GoogleAuthProvider());
+        const ref = doc(db, "peluqueras", cred.user.uid);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) {
+          await setDoc(ref, {
+            nombre: cred.user.displayName || cred.user.email || "Peluquera",
+            horario: {},
+            creado: serverTimestamp()
+          });
+        }
       } catch (error) {
         estadoLogin.textContent = "No se pudo entrar: " + error.message;
-        estadoLogin.className = "estado error";
-      }
-    });
-
-    btnRegistrar.addEventListener("click", async () => {
-      estadoLogin.textContent = "";
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, loginEmail.value.trim(), loginPass.value);
-        await setDoc(doc(db, "peluqueras", cred.user.uid), {
-          nombre: loginEmail.value.split("@")[0],
-          horario: {},
-          creado: serverTimestamp()
-        });
-      } catch (error) {
-        estadoLogin.textContent = "No se pudo crear la cuenta: " + error.message;
         estadoLogin.className = "estado error";
       }
     });
@@ -427,7 +437,6 @@
     const miNombre = document.getElementById("miNombre");
     const btnGuardarNombre = document.getElementById("btnGuardarNombre");
     const listaSolicitudes = document.getElementById("listaSolicitudes");
-    const listaConfirmadas = document.getElementById("listaConfirmadas");
     const listaClientes = document.getElementById("listaClientes");
     const listaServicios = document.getElementById("listaServicios");
     const servicioNombre = document.getElementById("servicioNombre");
@@ -438,6 +447,121 @@
     const horarioContainer = document.getElementById("horarioContainer");
     const btnGuardarHorario = document.getElementById("btnGuardarHorario");
     const estadoHorario = document.getElementById("estadoHorario");
+
+    const rangoSemana = document.getElementById("rangoSemana");
+    const resumenSemana = document.getElementById("resumenSemana");
+    const diasSemana = document.getElementById("diasSemana");
+    const btnSemanaAnterior = document.getElementById("btnSemanaAnterior");
+    const btnSemanaSiguiente = document.getElementById("btnSemanaSiguiente");
+    const manualNombre = document.getElementById("manualNombre");
+    const manualTelefono = document.getElementById("manualTelefono");
+    const manualServicio = document.getElementById("manualServicio");
+    const manualFecha = document.getElementById("manualFecha");
+    const manualHora = document.getElementById("manualHora");
+    const btnAnadirManual = document.getElementById("btnAnadirManual");
+    const estadoManual = document.getElementById("estadoManual");
+
+    let confirmadasCache = [];
+    let weekOffset = 0;
+
+    function fechaISO(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function getWeekDates(offset) {
+      const hoy = new Date();
+      const diaSemana = hoy.getDay(); // 0 = domingo
+      const diffLunes = diaSemana === 0 ? -6 : 1 - diaSemana;
+      const lunes = new Date(hoy);
+      lunes.setDate(hoy.getDate() + diffLunes + offset * 7);
+      return Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(lunes);
+        d.setDate(lunes.getDate() + i);
+        return d;
+      });
+    }
+
+    function renderCalendario() {
+      const NOMBRES_DIA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+      const dias = getWeekDates(weekOffset);
+      const desde = fechaISO(dias[0]);
+      const hasta = fechaISO(dias[6]);
+      const formatoCorto = (d) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+      rangoSemana.textContent = `${formatoCorto(dias[0])} - ${formatoCorto(dias[6])}`;
+
+      const citasSemana = confirmadasCache.filter((c) => c.fecha >= desde && c.fecha <= hasta);
+      resumenSemana.textContent = `${citasSemana.length} cita${citasSemana.length === 1 ? "" : "s"} confirmada${citasSemana.length === 1 ? "" : "s"} esta semana`;
+
+      diasSemana.innerHTML = "";
+      dias.forEach((d, i) => {
+        const fechaStr = fechaISO(d);
+        const citasDia = citasSemana
+          .filter((c) => c.fecha === fechaStr)
+          .sort((a, b) => a.hora.localeCompare(b.hora));
+
+        const bloque = document.createElement("div");
+        bloque.style.marginBottom = "12px";
+        const titulo = document.createElement("strong");
+        titulo.textContent = `${NOMBRES_DIA[i]} ${formatoCorto(d)}`;
+        bloque.appendChild(titulo);
+
+        const ul = document.createElement("ul");
+        ul.className = "lista";
+        if (citasDia.length === 0) {
+          ul.innerHTML = "<li>Libre, sin citas.</li>";
+        } else {
+          citasDia.forEach((c) => {
+            const li = document.createElement("li");
+            li.innerHTML = `${c.hora} — ${c.clienteNombre} <span class="detalle">${c.servicioNombre} (${c.duracionMin} min)</span>`;
+            ul.appendChild(li);
+          });
+        }
+        bloque.appendChild(ul);
+        diasSemana.appendChild(bloque);
+      });
+    }
+
+    btnSemanaAnterior.addEventListener("click", () => { weekOffset--; renderCalendario(); });
+    btnSemanaSiguiente.addEventListener("click", () => { weekOffset++; renderCalendario(); });
+
+    btnAnadirManual.addEventListener("click", async () => {
+      if (!auth.currentUser) return;
+      const nombre = manualNombre.value.trim();
+      const telefono = manualTelefono.value.trim();
+      const servicioOpt = manualServicio.selectedOptions[0];
+      const fecha = manualFecha.value;
+      const hora = manualHora.value;
+
+      if (!nombre || !telefono || !servicioOpt?.value || !fecha || !hora) {
+        estadoManual.textContent = "Rellena todos los campos.";
+        estadoManual.className = "estado error";
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "citas"), {
+          peluqueraId: auth.currentUser.uid,
+          peluqueraNombre: miNombre.value || "",
+          servicioNombre: servicioOpt.dataset.nombre,
+          duracionMin: Number(servicioOpt.dataset.duracion),
+          fecha,
+          hora,
+          clienteNombre: nombre,
+          clienteTelefono: telefono,
+          estado: "confirmada",
+          creado: serverTimestamp()
+        });
+        manualNombre.value = "";
+        manualTelefono.value = "";
+        manualFecha.value = "";
+        manualHora.value = "";
+        estadoManual.textContent = "Cita añadida al calendario.";
+        estadoManual.className = "estado ok";
+      } catch (error) {
+        estadoManual.textContent = "Error: " + error.message;
+        estadoManual.className = "estado error";
+      }
+    });
 
     // Construir las filas del formulario de horario, una vez
     DIAS.forEach(({ key, label }) => {
@@ -454,15 +578,15 @@
     });
 
     const subtabs = {
+      calendario: document.getElementById("subtabCalendario"),
       solicitudes: document.getElementById("subtabSolicitudes"),
-      confirmadas: document.getElementById("subtabConfirmadas"),
       servicios: document.getElementById("subtabServicios"),
       horario: document.getElementById("subtabHorario"),
       clientes: document.getElementById("subtabClientes")
     };
     const paneles = {
+      calendario: document.getElementById("panelCalendario"),
       solicitudes: document.getElementById("panelSolicitudes"),
-      confirmadas: document.getElementById("panelConfirmadas"),
       servicios: document.getElementById("panelServicios"),
       horario: document.getElementById("panelHorario"),
       clientes: document.getElementById("panelClientes")
@@ -494,13 +618,15 @@
       } else {
         loginBox.hidden = false;
         panelBox.hidden = true;
-        loginEmail.value = "";
-        loginPass.value = "";
         limpiarListeners();
       }
     });
 
     function iniciarPanel(uid) {
+      weekOffset = 0;
+      confirmadasCache = [];
+      renderCalendario();
+
       // Perfil (nombre + horario)
       unsubPerfil = onSnapshot(doc(db, "peluqueras", uid), (snap) => {
         const data = snap.data() || {};
@@ -519,6 +645,7 @@
         collection(db, "peluqueras", uid, "servicios"),
         (snap) => {
           listaServicios.innerHTML = "";
+          manualServicio.innerHTML = '<option value="">Selecciona...</option>';
           snap.forEach((d) => {
             const s = d.data();
             const fila = document.createElement("div");
@@ -531,6 +658,13 @@
               deleteDoc(doc(db, "peluqueras", uid, "servicios", d.id))
             );
             listaServicios.appendChild(fila);
+
+            const opt = document.createElement("option");
+            opt.value = d.id;
+            opt.dataset.nombre = s.nombre;
+            opt.dataset.duracion = s.duracionMin;
+            opt.textContent = `${s.nombre} (${s.duracionMin} min)`;
+            manualServicio.appendChild(opt);
           });
           if (snap.empty) listaServicios.innerHTML = "<p>Todavía no has añadido ningún servicio.</p>";
         }
@@ -578,16 +712,8 @@
           .map((d) => d.data())
           .sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
 
-        listaConfirmadas.innerHTML = "";
-        docs.forEach((c) => {
-          const li = document.createElement("li");
-          li.innerHTML = `
-            ${c.fecha} a las ${c.hora} — ${c.clienteNombre}
-            <span class="detalle">${c.servicioNombre} (${c.duracionMin} min) · Tel: ${c.clienteTelefono}</span>
-          `;
-          listaConfirmadas.appendChild(li);
-        });
-        if (docs.length === 0) listaConfirmadas.innerHTML = "<li>Todavía no hay citas confirmadas.</li>";
+        confirmadasCache = docs;
+        renderCalendario();
 
         // Ranking de clientes frecuentes + su historial de servicios
         const porTelefono = new Map();

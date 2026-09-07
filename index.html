@@ -3,19 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prueba Firestore - Peluquería</title>
+  <title>Citas Peluquería</title>
   <style>
     * { box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      max-width: 480px;
+      max-width: 520px;
       margin: 0 auto;
-      padding: 24px 16px;
+      padding: 16px 16px 48px;
       background: #faf7f5;
       color: #2b2320;
     }
-    h1 { font-size: 1.3rem; margin-bottom: 4px; }
+    h1 { font-size: 1.3rem; margin: 8px 0 4px; }
+    h2 { font-size: 1.05rem; margin: 0 0 12px; }
     p.subtitle { color: #6b5d55; margin-top: 0; font-size: 0.9rem; }
+
+    nav.tabs, nav.subtabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+    nav.tabs button, nav.subtabs button {
+      flex: 1;
+      white-space: nowrap;
+      padding: 10px 8px;
+      border: 1px solid #d8cfc9;
+      background: #fff;
+      color: #2b2320;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    nav.tabs button.active, nav.subtabs button.active {
+      background: #b5651d;
+      border-color: #b5651d;
+      color: #fff;
+    }
+
     .card {
       background: #fff;
       border-radius: 12px;
@@ -24,16 +50,16 @@
       margin-bottom: 16px;
     }
     label { display: block; font-size: 0.85rem; margin-bottom: 4px; font-weight: 600; }
-    input {
+    input, select {
       width: 100%;
       padding: 10px;
       border: 1px solid #d8cfc9;
       border-radius: 8px;
       font-size: 1rem;
       margin-bottom: 12px;
+      background: #fff;
     }
-    button {
-      width: 100%;
+    button.primary, button.action {
       padding: 12px;
       border: none;
       border-radius: 8px;
@@ -43,56 +69,185 @@
       font-weight: 600;
       cursor: pointer;
     }
+    button.primary { width: 100%; }
     button:disabled { opacity: 0.6; cursor: default; }
-    #estado { font-size: 0.85rem; margin-top: 8px; min-height: 1.2em; }
-    #estado.error { color: #b00020; }
-    #estado.ok { color: #1b7a3d; }
-    ul#lista { list-style: none; padding: 0; margin: 0; }
-    ul#lista li {
-      padding: 10px;
-      border-bottom: 1px solid #f0e9e4;
+    button.secondary {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #b5651d;
+      border-radius: 8px;
+      background: #fff;
+      color: #b5651d;
       font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
     }
-    ul#lista li:last-child { border-bottom: none; }
-    ul#lista li .hora { color: #6b5d55; font-size: 0.8rem; display: block; }
+    button.link {
+      background: none; border: none; color: #b5651d; font-weight: 600;
+      cursor: pointer; padding: 0; font-size: 0.85rem;
+    }
+    .estado { font-size: 0.85rem; margin-top: 4px; min-height: 1.2em; }
+    .estado.error { color: #b00020; }
+    .estado.ok { color: #1b7a3d; }
+
+    ul.lista { list-style: none; padding: 0; margin: 0; }
+    ul.lista li {
+      padding: 10px 0;
+      border-bottom: 1px solid #f0e9e4;
+      font-size: 0.92rem;
+    }
+    ul.lista li:last-child { border-bottom: none; }
+    ul.lista li .detalle { color: #6b5d55; font-size: 0.8rem; display: block; margin-top: 2px; }
+    ul.lista li .acciones { margin-top: 8px; display: flex; gap: 8px; }
+    ul.lista li .acciones button { flex: 1; padding: 8px; font-size: 0.8rem; }
+    button.aprobar { background: #1b7a3d; color: #fff; border: none; border-radius: 6px; }
+    button.rechazar { background: #b00020; color: #fff; border: none; border-radius: 6px; }
+    button.borrar { background: #fff; color: #b00020; border: 1px solid #b00020; border-radius: 6px; padding: 6px 10px; font-size: 0.8rem; cursor: pointer; }
+
+    .fila-horario {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+    }
+    .fila-horario .dia-nombre { width: 78px; font-weight: 600; }
+    .fila-horario input[type="checkbox"] { width: auto; margin: 0; }
+    .fila-horario input[type="time"] { margin: 0; padding: 6px; font-size: 0.85rem; }
+
+    .fila-servicio { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0e9e4; font-size: 0.9rem; }
+    .fila-servicio:last-child { border-bottom: none; }
+
+    [hidden] { display: none !important; }
   </style>
 </head>
 <body>
 
-  <h1>Prueba de Firestore</h1>
-  <p class="subtitle">Solicitudes guardadas en la nube, visibles en tiempo real desde cualquier móvil.</p>
+  <h1>💈 Citas Peluquería</h1>
+  <p class="subtitle">Pide cita o gestiona tu agenda, todo desde el móvil.</p>
 
-  <div class="card">
-    <label for="nombre">Nombre</label>
-    <input type="text" id="nombre" placeholder="Ej: María" />
+  <nav class="tabs">
+    <button id="tabCliente" class="active">Reservar cita</button>
+    <button id="tabPeluquera">Área peluquera</button>
+  </nav>
 
-    <label for="horaCita">Hora deseada</label>
-    <input type="time" id="horaCita" />
+  <!-- ===================== VISTA CLIENTE ===================== -->
+  <section id="vistaCliente">
+    <div class="card">
+      <h2>Pedir cita</h2>
 
-    <button id="btnEnviar">Enviar solicitud de prueba</button>
-    <div id="estado"></div>
-  </div>
+      <label for="selectPeluquera">Peluquera</label>
+      <select id="selectPeluquera">
+        <option value="">Selecciona...</option>
+      </select>
 
-  <div class="card">
-    <h2 style="font-size:1rem; margin-top:0;">Solicitudes guardadas</h2>
-    <ul id="lista"></ul>
-  </div>
+      <label for="selectServicio">Servicio</label>
+      <select id="selectServicio" disabled>
+        <option value="">Elige primero una peluquera</option>
+      </select>
 
-  <!-- 1) SDK de Firebase cargado desde CDN, en modo "modular" (v10+) -->
+      <label for="fechaCita">Fecha deseada</label>
+      <input type="date" id="fechaCita" />
+
+      <label for="horaCita">Hora deseada</label>
+      <input type="time" id="horaCita" />
+
+      <label for="clienteNombre">Tu nombre</label>
+      <input type="text" id="clienteNombre" placeholder="Ej: María" />
+
+      <label for="clienteTelefono">Tu teléfono</label>
+      <input type="tel" id="clienteTelefono" placeholder="Ej: 600 000 000" />
+
+      <button class="primary" id="btnSolicitar">Enviar solicitud de cita</button>
+      <div class="estado" id="estadoCliente"></div>
+    </div>
+  </section>
+
+  <!-- ===================== VISTA PELUQUERA ===================== -->
+  <section id="vistaPeluquera" hidden>
+
+    <!-- Login / registro -->
+    <div class="card" id="loginBox">
+      <h2>Acceso peluquera</h2>
+      <label for="loginEmail">Email</label>
+      <input type="email" id="loginEmail" placeholder="tucorreo@ejemplo.com" />
+      <label for="loginPass">Contraseña</label>
+      <input type="password" id="loginPass" placeholder="Mínimo 6 caracteres" />
+      <button class="primary" id="btnEntrar">Entrar</button>
+      <button class="secondary" id="btnRegistrar">Crear cuenta nueva</button>
+      <div class="estado" id="estadoLogin"></div>
+    </div>
+
+    <!-- Panel de gestión, visible tras iniciar sesión -->
+    <div id="panelBox" hidden>
+
+      <div class="card">
+        <label for="miNombre">Tu nombre (visible para los clientes)</label>
+        <input type="text" id="miNombre" placeholder="Ej: Ana - Peluquería Centro" />
+        <button class="secondary" id="btnGuardarNombre">Guardar nombre</button>
+        <button class="link" id="btnLogout" style="margin-top:12px;">Cerrar sesión</button>
+      </div>
+
+      <nav class="subtabs">
+        <button id="subtabSolicitudes" class="active">Solicitudes</button>
+        <button id="subtabConfirmadas">Calendario</button>
+        <button id="subtabServicios">Servicios</button>
+        <button id="subtabHorario">Horario</button>
+        <button id="subtabClientes">Clientes</button>
+      </nav>
+
+      <div class="card" id="panelSolicitudes">
+        <h2>Solicitudes pendientes</h2>
+        <ul class="lista" id="listaSolicitudes"></ul>
+      </div>
+
+      <div class="card" id="panelConfirmadas" hidden>
+        <h2>Citas confirmadas</h2>
+        <ul class="lista" id="listaConfirmadas"></ul>
+      </div>
+
+      <div class="card" id="panelServicios" hidden>
+        <h2>Tus servicios</h2>
+        <div id="listaServicios"></div>
+        <label for="servicioNombre" style="margin-top:12px;">Nombre del servicio</label>
+        <input type="text" id="servicioNombre" placeholder="Ej: Corte de pelo" />
+        <label for="servicioDuracion">Duración (minutos)</label>
+        <input type="number" id="servicioDuracion" placeholder="Ej: 30" min="5" step="5" />
+        <label for="servicioPrecio">Precio (€)</label>
+        <input type="number" id="servicioPrecio" placeholder="Ej: 15" min="0" step="0.5" />
+        <button class="primary" id="btnAnadirServicio">Añadir servicio</button>
+        <div class="estado" id="estadoServicios"></div>
+      </div>
+
+      <div class="card" id="panelHorario" hidden>
+        <h2>Horario semanal</h2>
+        <div id="horarioContainer"></div>
+        <button class="primary" id="btnGuardarHorario">Guardar horario</button>
+        <div class="estado" id="estadoHorario"></div>
+      </div>
+
+      <div class="card" id="panelClientes" hidden>
+        <h2>Clientes más frecuentes</h2>
+        <ul class="lista" id="listaClientes"></ul>
+      </div>
+
+    </div>
+  </section>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
     import {
-      getFirestore,
-      collection,
-      addDoc,
-      onSnapshot,
-      serverTimestamp,
-      query,
-      orderBy
+      getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
+      onSnapshot, query, where, orderBy, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import {
+      getAuth, onAuthStateChanged, signInWithEmailAndPassword,
+      createUserWithEmailAndPassword, signOut
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
-    // 2) PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE
-    // La obtienes en la consola de Firebase, en "Configuración del proyecto" > "Tus apps" > "Config".
+    // PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE
+    // (Consola de Firebase > Configuración del proyecto > Tus apps > Config)
     const firebaseConfig = {
       apiKey: "TU_API_KEY",
       authDomain: "TU_PROYECTO.firebaseapp.com",
@@ -102,70 +257,412 @@
       appId: "1:000000000000:web:xxxxxxxxxxxxxxxxxxxxxx"
     };
 
-    // 3) Inicializar Firebase y Firestore
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
 
-    // Referencia a la colección "solicitudes_prueba"
-    const solicitudesRef = collection(db, "solicitudes_prueba");
+    const DIAS = [
+      { key: "lunes", label: "Lunes" },
+      { key: "martes", label: "Martes" },
+      { key: "miercoles", label: "Miércoles" },
+      { key: "jueves", label: "Jueves" },
+      { key: "viernes", label: "Viernes" },
+      { key: "sabado", label: "Sábado" },
+      { key: "domingo", label: "Domingo" }
+    ];
 
-    const nombreInput = document.getElementById("nombre");
-    const horaInput = document.getElementById("horaCita");
-    const btnEnviar = document.getElementById("btnEnviar");
-    const estadoDiv = document.getElementById("estado");
-    const lista = document.getElementById("lista");
+    /* ---------- Navegación entre pestañas principales ---------- */
+    const tabCliente = document.getElementById("tabCliente");
+    const tabPeluquera = document.getElementById("tabPeluquera");
+    const vistaCliente = document.getElementById("vistaCliente");
+    const vistaPeluquera = document.getElementById("vistaPeluquera");
 
-    // 4) Enviar un nuevo documento a Firestore al pulsar el botón
-    btnEnviar.addEventListener("click", async () => {
-      const nombre = nombreInput.value.trim();
-      const hora = horaInput.value;
+    tabCliente.addEventListener("click", () => {
+      tabCliente.classList.add("active");
+      tabPeluquera.classList.remove("active");
+      vistaCliente.hidden = false;
+      vistaPeluquera.hidden = true;
+    });
+    tabPeluquera.addEventListener("click", () => {
+      tabPeluquera.classList.add("active");
+      tabCliente.classList.remove("active");
+      vistaPeluquera.hidden = false;
+      vistaCliente.hidden = true;
+    });
 
-      if (!nombre || !hora) {
-        estadoDiv.textContent = "Rellena el nombre y la hora antes de enviar.";
-        estadoDiv.className = "error";
+    /* ================== VISTA CLIENTE ================== */
+    const selectPeluquera = document.getElementById("selectPeluquera");
+    const selectServicio = document.getElementById("selectServicio");
+    const fechaCita = document.getElementById("fechaCita");
+    const horaCita = document.getElementById("horaCita");
+    const clienteNombre = document.getElementById("clienteNombre");
+    const clienteTelefono = document.getElementById("clienteTelefono");
+    const btnSolicitar = document.getElementById("btnSolicitar");
+    const estadoCliente = document.getElementById("estadoCliente");
+
+    onSnapshot(collection(db, "peluqueras"), (snap) => {
+      const actual = selectPeluquera.value;
+      selectPeluquera.innerHTML = '<option value="">Selecciona...</option>';
+      snap.forEach((d) => {
+        const opt = document.createElement("option");
+        opt.value = d.id;
+        opt.textContent = d.data().nombre || "Peluquera";
+        selectPeluquera.appendChild(opt);
+      });
+      selectPeluquera.value = actual;
+    });
+
+    let unsubServiciosCliente = null;
+    selectPeluquera.addEventListener("change", () => {
+      if (unsubServiciosCliente) unsubServiciosCliente();
+      const peluqueraId = selectPeluquera.value;
+      if (!peluqueraId) {
+        selectServicio.innerHTML = '<option value="">Elige primero una peluquera</option>';
+        selectServicio.disabled = true;
+        return;
+      }
+      selectServicio.disabled = false;
+      unsubServiciosCliente = onSnapshot(
+        collection(db, "peluqueras", peluqueraId, "servicios"),
+        (snap) => {
+          selectServicio.innerHTML = '<option value="">Selecciona...</option>';
+          snap.forEach((d) => {
+            const s = d.data();
+            const opt = document.createElement("option");
+            opt.value = d.id;
+            opt.dataset.nombre = s.nombre;
+            opt.dataset.duracion = s.duracionMin;
+            opt.textContent = `${s.nombre} (${s.duracionMin} min - ${s.precio}€)`;
+            selectServicio.appendChild(opt);
+          });
+        }
+      );
+    });
+
+    btnSolicitar.addEventListener("click", async () => {
+      const peluqueraId = selectPeluquera.value;
+      const peluqueraNombre = selectPeluquera.selectedOptions[0]?.textContent || "";
+      const servicioOpt = selectServicio.selectedOptions[0];
+      const fecha = fechaCita.value;
+      const hora = horaCita.value;
+      const nombre = clienteNombre.value.trim();
+      const telefono = clienteTelefono.value.trim();
+
+      if (!peluqueraId || !servicioOpt?.value || !fecha || !hora || !nombre || !telefono) {
+        estadoCliente.textContent = "Rellena todos los campos antes de enviar.";
+        estadoCliente.className = "estado error";
         return;
       }
 
-      btnEnviar.disabled = true;
-      estadoDiv.textContent = "Enviando...";
-      estadoDiv.className = "";
+      btnSolicitar.disabled = true;
+      estadoCliente.textContent = "Enviando...";
+      estadoCliente.className = "estado";
 
       try {
-        await addDoc(solicitudesRef, {
-          nombre,
+        await addDoc(collection(db, "citas"), {
+          peluqueraId,
+          peluqueraNombre,
+          servicioNombre: servicioOpt.dataset.nombre,
+          duracionMin: Number(servicioOpt.dataset.duracion),
+          fecha,
           hora,
+          clienteNombre: nombre,
+          clienteTelefono: telefono,
+          estado: "pendiente",
           creado: serverTimestamp()
         });
-        estadoDiv.textContent = "¡Solicitud guardada correctamente!";
-        estadoDiv.className = "ok";
-        nombreInput.value = "";
-        horaInput.value = "";
+        estadoCliente.textContent = "¡Solicitud enviada! La peluquera la confirmará en breve.";
+        estadoCliente.className = "estado ok";
+        fechaCita.value = "";
+        horaCita.value = "";
+        clienteNombre.value = "";
+        clienteTelefono.value = "";
       } catch (error) {
-        console.error("Error al guardar en Firestore:", error);
-        estadoDiv.textContent = "Error al guardar: " + error.message;
-        estadoDiv.className = "error";
+        console.error(error);
+        estadoCliente.textContent = "Error al enviar: " + error.message;
+        estadoCliente.className = "estado error";
       } finally {
-        btnEnviar.disabled = false;
+        btnSolicitar.disabled = false;
       }
     });
 
-    // 5) Escuchar cambios en tiempo real y actualizar la lista automáticamente
-    const q = query(solicitudesRef, orderBy("creado", "desc"));
-    onSnapshot(q, (snapshot) => {
-      lista.innerHTML = "";
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const li = document.createElement("li");
-        li.innerHTML = `${data.nombre} — ${data.hora}<span class="hora">ID: ${doc.id}</span>`;
-        lista.appendChild(li);
-      });
-      if (snapshot.empty) {
-        lista.innerHTML = "<li>No hay solicitudes todavía.</li>";
+    /* ================== LOGIN / REGISTRO PELUQUERA ================== */
+    const loginEmail = document.getElementById("loginEmail");
+    const loginPass = document.getElementById("loginPass");
+    const btnEntrar = document.getElementById("btnEntrar");
+    const btnRegistrar = document.getElementById("btnRegistrar");
+    const estadoLogin = document.getElementById("estadoLogin");
+    const loginBox = document.getElementById("loginBox");
+    const panelBox = document.getElementById("panelBox");
+    const btnLogout = document.getElementById("btnLogout");
+
+    btnEntrar.addEventListener("click", async () => {
+      estadoLogin.textContent = "";
+      try {
+        await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPass.value);
+      } catch (error) {
+        estadoLogin.textContent = "No se pudo entrar: " + error.message;
+        estadoLogin.className = "estado error";
       }
-    }, (error) => {
-      console.error("Error al escuchar Firestore:", error);
-      estadoDiv.textContent = "Error al leer datos: " + error.message;
-      estadoDiv.className = "error";
+    });
+
+    btnRegistrar.addEventListener("click", async () => {
+      estadoLogin.textContent = "";
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, loginEmail.value.trim(), loginPass.value);
+        await setDoc(doc(db, "peluqueras", cred.user.uid), {
+          nombre: loginEmail.value.split("@")[0],
+          horario: {},
+          creado: serverTimestamp()
+        });
+      } catch (error) {
+        estadoLogin.textContent = "No se pudo crear la cuenta: " + error.message;
+        estadoLogin.className = "estado error";
+      }
+    });
+
+    btnLogout.addEventListener("click", () => signOut(auth));
+
+    /* ================== PANEL DE GESTIÓN ================== */
+    const miNombre = document.getElementById("miNombre");
+    const btnGuardarNombre = document.getElementById("btnGuardarNombre");
+    const listaSolicitudes = document.getElementById("listaSolicitudes");
+    const listaConfirmadas = document.getElementById("listaConfirmadas");
+    const listaClientes = document.getElementById("listaClientes");
+    const listaServicios = document.getElementById("listaServicios");
+    const servicioNombre = document.getElementById("servicioNombre");
+    const servicioDuracion = document.getElementById("servicioDuracion");
+    const servicioPrecio = document.getElementById("servicioPrecio");
+    const btnAnadirServicio = document.getElementById("btnAnadirServicio");
+    const estadoServicios = document.getElementById("estadoServicios");
+    const horarioContainer = document.getElementById("horarioContainer");
+    const btnGuardarHorario = document.getElementById("btnGuardarHorario");
+    const estadoHorario = document.getElementById("estadoHorario");
+
+    // Construir las filas del formulario de horario, una vez
+    DIAS.forEach(({ key, label }) => {
+      const fila = document.createElement("div");
+      fila.className = "fila-horario";
+      fila.innerHTML = `
+        <span class="dia-nombre">${label}</span>
+        <input type="checkbox" id="dia-${key}-activo" />
+        <input type="time" id="dia-${key}-inicio" />
+        <span>a</span>
+        <input type="time" id="dia-${key}-fin" />
+      `;
+      horarioContainer.appendChild(fila);
+    });
+
+    const subtabs = {
+      solicitudes: document.getElementById("subtabSolicitudes"),
+      confirmadas: document.getElementById("subtabConfirmadas"),
+      servicios: document.getElementById("subtabServicios"),
+      horario: document.getElementById("subtabHorario"),
+      clientes: document.getElementById("subtabClientes")
+    };
+    const paneles = {
+      solicitudes: document.getElementById("panelSolicitudes"),
+      confirmadas: document.getElementById("panelConfirmadas"),
+      servicios: document.getElementById("panelServicios"),
+      horario: document.getElementById("panelHorario"),
+      clientes: document.getElementById("panelClientes")
+    };
+    Object.keys(subtabs).forEach((key) => {
+      subtabs[key].addEventListener("click", () => {
+        Object.keys(subtabs).forEach((k) => {
+          subtabs[k].classList.toggle("active", k === key);
+          paneles[k].hidden = k !== key;
+        });
+      });
+    });
+
+    let unsubPerfil = null;
+    let unsubServiciosPanel = null;
+    let unsubPendientes = null;
+    let unsubConfirmadas = null;
+
+    function limpiarListeners() {
+      [unsubPerfil, unsubServiciosPanel, unsubPendientes, unsubConfirmadas].forEach((fn) => fn && fn());
+      unsubPerfil = unsubServiciosPanel = unsubPendientes = unsubConfirmadas = null;
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        loginBox.hidden = true;
+        panelBox.hidden = false;
+        iniciarPanel(user.uid);
+      } else {
+        loginBox.hidden = false;
+        panelBox.hidden = true;
+        loginEmail.value = "";
+        loginPass.value = "";
+        limpiarListeners();
+      }
+    });
+
+    function iniciarPanel(uid) {
+      // Perfil (nombre + horario)
+      unsubPerfil = onSnapshot(doc(db, "peluqueras", uid), (snap) => {
+        const data = snap.data() || {};
+        miNombre.value = data.nombre || "";
+        const horario = data.horario || {};
+        DIAS.forEach(({ key }) => {
+          const d = horario[key] || {};
+          document.getElementById(`dia-${key}-activo`).checked = !!d.activo;
+          document.getElementById(`dia-${key}-inicio`).value = d.inicio || "";
+          document.getElementById(`dia-${key}-fin`).value = d.fin || "";
+        });
+      });
+
+      // Servicios propios
+      unsubServiciosPanel = onSnapshot(
+        collection(db, "peluqueras", uid, "servicios"),
+        (snap) => {
+          listaServicios.innerHTML = "";
+          snap.forEach((d) => {
+            const s = d.data();
+            const fila = document.createElement("div");
+            fila.className = "fila-servicio";
+            fila.innerHTML = `
+              <span>${s.nombre} — ${s.duracionMin} min — ${s.precio}€</span>
+              <button class="borrar" data-id="${d.id}">Borrar</button>
+            `;
+            fila.querySelector("button").addEventListener("click", () =>
+              deleteDoc(doc(db, "peluqueras", uid, "servicios", d.id))
+            );
+            listaServicios.appendChild(fila);
+          });
+          if (snap.empty) listaServicios.innerHTML = "<p>Todavía no has añadido ningún servicio.</p>";
+        }
+      );
+
+      // Solicitudes pendientes
+      const qPendientes = query(
+        collection(db, "citas"),
+        where("peluqueraId", "==", uid),
+        where("estado", "==", "pendiente")
+      );
+      unsubPendientes = onSnapshot(qPendientes, (snap) => {
+        listaSolicitudes.innerHTML = "";
+        const docs = snap.docs.sort((a, b) => (a.data().fecha + a.data().hora).localeCompare(b.data().fecha + b.data().hora));
+        docs.forEach((d) => {
+          const c = d.data();
+          const li = document.createElement("li");
+          li.innerHTML = `
+            ${c.clienteNombre} — ${c.servicioNombre}
+            <span class="detalle">${c.fecha} a las ${c.hora} · Tel: ${c.clienteTelefono}</span>
+            <div class="acciones">
+              <button class="aprobar">Confirmar</button>
+              <button class="rechazar">Rechazar</button>
+            </div>
+          `;
+          li.querySelector(".aprobar").addEventListener("click", () =>
+            updateDoc(doc(db, "citas", d.id), { estado: "confirmada" })
+          );
+          li.querySelector(".rechazar").addEventListener("click", () =>
+            updateDoc(doc(db, "citas", d.id), { estado: "rechazada" })
+          );
+          listaSolicitudes.appendChild(li);
+        });
+        if (snap.empty) listaSolicitudes.innerHTML = "<li>No hay solicitudes pendientes.</li>";
+      });
+
+      // Citas confirmadas (también sirve para calcular el ranking de clientes)
+      const qConfirmadas = query(
+        collection(db, "citas"),
+        where("peluqueraId", "==", uid),
+        where("estado", "==", "confirmada")
+      );
+      unsubConfirmadas = onSnapshot(qConfirmadas, (snap) => {
+        const docs = snap.docs
+          .map((d) => d.data())
+          .sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
+
+        listaConfirmadas.innerHTML = "";
+        docs.forEach((c) => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            ${c.fecha} a las ${c.hora} — ${c.clienteNombre}
+            <span class="detalle">${c.servicioNombre} (${c.duracionMin} min) · Tel: ${c.clienteTelefono}</span>
+          `;
+          listaConfirmadas.appendChild(li);
+        });
+        if (docs.length === 0) listaConfirmadas.innerHTML = "<li>Todavía no hay citas confirmadas.</li>";
+
+        // Ranking de clientes frecuentes + su historial de servicios
+        const porTelefono = new Map();
+        docs.forEach((c) => {
+          const key = c.clienteTelefono || c.clienteNombre;
+          if (!porTelefono.has(key)) {
+            porTelefono.set(key, { nombre: c.clienteNombre, telefono: c.clienteTelefono, visitas: 0, servicios: [] });
+          }
+          const entrada = porTelefono.get(key);
+          entrada.visitas += 1;
+          entrada.servicios.push(c.servicioNombre);
+        });
+        const ranking = [...porTelefono.values()].sort((a, b) => b.visitas - a.visitas);
+
+        listaClientes.innerHTML = "";
+        ranking.forEach((cl) => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            ${cl.nombre} — ${cl.visitas} visita${cl.visitas === 1 ? "" : "s"}
+            <span class="detalle">Tel: ${cl.telefono} · Servicios pedidos: ${cl.servicios.join(", ")}</span>
+          `;
+          listaClientes.appendChild(li);
+        });
+        if (ranking.length === 0) listaClientes.innerHTML = "<li>Todavía no hay historial de clientes.</li>";
+      });
+    }
+
+    btnGuardarNombre.addEventListener("click", async () => {
+      if (!auth.currentUser) return;
+      await setDoc(doc(db, "peluqueras", auth.currentUser.uid), { nombre: miNombre.value.trim() }, { merge: true });
+    });
+
+    btnAnadirServicio.addEventListener("click", async () => {
+      if (!auth.currentUser) return;
+      const nombre = servicioNombre.value.trim();
+      const duracionMin = Number(servicioDuracion.value);
+      const precio = Number(servicioPrecio.value);
+      if (!nombre || !duracionMin || Number.isNaN(precio)) {
+        estadoServicios.textContent = "Rellena nombre, duración y precio.";
+        estadoServicios.className = "estado error";
+        return;
+      }
+      try {
+        await addDoc(collection(db, "peluqueras", auth.currentUser.uid, "servicios"), {
+          nombre, duracionMin, precio
+        });
+        servicioNombre.value = "";
+        servicioDuracion.value = "";
+        servicioPrecio.value = "";
+        estadoServicios.textContent = "Servicio añadido.";
+        estadoServicios.className = "estado ok";
+      } catch (error) {
+        estadoServicios.textContent = "Error: " + error.message;
+        estadoServicios.className = "estado error";
+      }
+    });
+
+    btnGuardarHorario.addEventListener("click", async () => {
+      if (!auth.currentUser) return;
+      const horario = {};
+      DIAS.forEach(({ key }) => {
+        horario[key] = {
+          activo: document.getElementById(`dia-${key}-activo`).checked,
+          inicio: document.getElementById(`dia-${key}-inicio`).value,
+          fin: document.getElementById(`dia-${key}-fin`).value
+        };
+      });
+      try {
+        await setDoc(doc(db, "peluqueras", auth.currentUser.uid), { horario }, { merge: true });
+        estadoHorario.textContent = "Horario guardado.";
+        estadoHorario.className = "estado ok";
+      } catch (error) {
+        estadoHorario.textContent = "Error: " + error.message;
+        estadoHorario.className = "estado error";
+      }
     });
   </script>
 
